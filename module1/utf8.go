@@ -1,0 +1,79 @@
+package main
+
+import "fmt"
+
+func encodeRune(utf32Rune rune) []byte {
+	if utf32Rune < 128 {
+		return []byte{byte(utf32Rune)}
+	} else if utf32Rune < 2048 {
+		return []byte{byte(utf32Rune>>6 | 192), byte(utf32Rune&63 | 128)}
+	} else if utf32Rune < 32768 {
+		return []byte{byte(utf32Rune>>12 | 224), byte(utf32Rune>>6&63 | 128), byte(utf32Rune&63 | 128)}
+	} else {
+		return []byte{byte(utf32Rune>>18 | 240), byte(utf32Rune>>12&63 | 128),
+			byte(utf32Rune>>6&63 | 128), byte(utf32Rune&63 | 128)}
+	}
+}
+
+func encode(utf32 []rune) []byte {
+	utf8 := make([]byte, 0)
+	for _, rune := range utf32 {
+		rune_utf8 := encodeRune(rune)
+		utf8 = append(utf8, rune_utf8...)
+	}
+	return utf8
+}
+
+func decodeByte(utf8 []byte, i int) (rune, int) {
+	if utf8[i] < 128 {
+		return rune(utf8[i]), i + 1
+	} else if utf8[i] <= 223 {
+		return rune(utf8[i]&31)<<6 | rune(utf8[i+1]&63), i + 2
+	} else if utf8[i] <= 239 {
+		return rune(utf8[i]&15)<<12 | rune(utf8[i+1]&63)<<6 | rune(utf8[i+2]&63), i + 3
+	} else {
+		return rune(utf8[i]&7)<<18 | rune(utf8[i+1]&63)<<12 | rune(utf8[i+2]&63)<<6 | rune(utf8[i+3]&63), i + 4
+	}
+}
+
+func decode(utf8 []byte) []rune {
+	utf32 := make([]rune, 0)
+	var rune rune
+	for i := 0; i < len(utf8); {
+		rune, i = decodeByte(utf8, i)
+		utf32 = append(utf32, rune)
+	}
+	return utf32
+}
+
+func main() {
+	enc_sources := []([]rune){
+		{},
+		{'\u002c', '\u002d'},
+		{'\U000002ac', '\U000002a1'},
+		{'\U000022ac', '\U00002aa1'},
+		{'\U001022ac'},
+	}
+	for _, source := range enc_sources {
+		utf8 := encode(source)
+		for _, x := range utf8 {
+			fmt.Printf("0x%x ", x)
+		}
+		fmt.Printf("\n")
+	}
+
+	dec_sources := []([]byte){
+		{},
+		{0x2c, 0x2d},
+		{0xca, 0xac, 0xca, 0xa1},
+		{0xe2, 0x8a, 0xac, 0xe2, 0xaa, 0xa1},
+		{0xf4, 0x82, 0x8a, 0xac},
+	}
+	for _, source := range dec_sources {
+		utf32 := decode(source)
+		for _, x := range utf32 {
+			fmt.Printf("\\U%x ", x)
+		}
+		fmt.Printf("\n")
+	}
+}
