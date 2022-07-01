@@ -1,16 +1,14 @@
 package main
 
-import "fmt"
-
 func encodeRune(utf32Rune rune) []byte {
 	if utf32Rune < 128 {
 		return []byte{byte(utf32Rune)}
 	} else if utf32Rune < 2048 {
 		return []byte{byte(utf32Rune>>6 | 192), byte(utf32Rune&63 | 128)}
-	} else if utf32Rune < 32768 {
+	} else if utf32Rune < 65535 {
 		return []byte{byte(utf32Rune>>12 | 224), byte(utf32Rune>>6&63 | 128), byte(utf32Rune&63 | 128)}
 	} else {
-		return []byte{byte(utf32Rune>>18 | 240), byte(utf32Rune>>12&63 | 128),
+		return []byte{byte(utf32Rune>>18&7 | 240), byte(utf32Rune>>12&63 | 128),
 			byte(utf32Rune>>6&63 | 128), byte(utf32Rune&63 | 128)}
 	}
 }
@@ -47,33 +45,4 @@ func decode(utf8 []byte) []rune {
 }
 
 func main() {
-	enc_sources := []([]rune){
-		{},
-		{'\u002c', '\u002d'},
-		{'\U000002ac', '\U000002a1'},
-		{'\U000022ac', '\U00002aa1'},
-		{'\U001022ac'},
-	}
-	for _, source := range enc_sources {
-		utf8 := encode(source)
-		for _, x := range utf8 {
-			fmt.Printf("0x%x ", x)
-		}
-		fmt.Printf("\n")
-	}
-
-	dec_sources := []([]byte){
-		{},
-		{0x2c, 0x2d},
-		{0xca, 0xac, 0xca, 0xa1},
-		{0xe2, 0x8a, 0xac, 0xe2, 0xaa, 0xa1},
-		{0xf4, 0x82, 0x8a, 0xac},
-	}
-	for _, source := range dec_sources {
-		utf32 := decode(source)
-		for _, x := range utf32 {
-			fmt.Printf("\\U%x ", x)
-		}
-		fmt.Printf("\n")
-	}
 }

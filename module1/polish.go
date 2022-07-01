@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strconv"
 	"unicode"
 )
@@ -14,68 +16,103 @@ type stream struct {
 
 // Запрос текущего символа
 func (s stream) peek() rune {
-	symb := s.expr[s.i]
+	for s.i < len(s.expr) && (s.expr[s.i] == '(' || s.expr[s.i] == ')' || s.expr[s.i] == ' ') {
+		s.i++
+	}
+	var symb rune
+	if s.i == len(s.expr) {
+		symb = 0
+	} else {
+		symb = s.expr[s.i]
+	}
 	return symb
 }
 
 // Продвижение вперёд
 func (s *stream) next() rune {
-	symb := s.expr[s.i]
+	for s.i < len(s.expr) && (s.expr[s.i] == '(' || s.expr[s.i] == ')' || s.expr[s.i] == ' ') {
+		s.i++
+	}
+	var symb rune
+	if s.i == len(s.expr) {
+		symb = 0
+	} else {
+		symb = s.expr[s.i]
+	}
 	s.i++
 	return symb
 }
 
-func count_rec(s stream) int {
+func count_rec(s *stream) int {
 	n := len(s.expr)
+	s.peek()
 	if s.i >= n {
 		return 0
 	}
 	if s.peek() == '*' {
 		s.next()
 		mul := 1
-		for s.i < n && (unicode.IsDigit(s.peek()) || s.peek() == '*') {
-			buf, _ := strconv.Atoi(string(s.next()))
-			mul *= buf
-		}
-		if s.i < n && (s.peek() == '+' || s.peek() == '-') {
-			return mul * count_rec(s)
+		var count int
+		for count = 0; count < 2; count++ {
+			if unicode.IsDigit(s.peek()) {
+				buf, _ := strconv.Atoi(string(s.next()))
+				mul *= buf
+			} else if s.peek() == '+' || s.peek() == '*' || s.peek() == '-' {
+				mul *= count_rec(s)
+			}
 		}
 		return mul
 	} else if s.peek() == '+' {
 		s.next()
 		sum := 0
-		for s.i < n && (unicode.IsDigit(s.peek()) || s.peek() == '+') {
-			buf, _ := strconv.Atoi(string(s.next()))
-			sum += buf
-		}
-		if s.i < n && (s.peek() == '*' || s.peek() == '-') {
-			return sum + count_rec(s)
+		var count int
+		for count = 0; count < 2; count++ {
+			if unicode.IsDigit(s.peek()) {
+				buf, _ := strconv.Atoi(string(s.next()))
+				sum += buf
+			} else if s.peek() == '+' || s.peek() == '*' || s.peek() == '-' {
+				sum += count_rec(s)
+			}
 		}
 		return sum
 	} else if s.peek() == '-' {
 		s.next()
 		sum := 0
-		for s.i < n && (unicode.IsDigit(s.peek()) || s.peek() == '+') {
-			buf, _ := strconv.Atoi(string(s.next()))
-			sum -= buf
-		}
-		if s.i < n && (s.peek() == '*' || s.peek() == '+') {
-			return sum - count_rec(s)
+		first := true
+		var count int
+		for count = 0; count < 2; count++ {
+			if unicode.IsDigit(s.peek()) {
+				buf, _ := strconv.Atoi(string(s.next()))
+				if first {
+					sum += buf
+					first = false
+				} else {
+					sum -= buf
+				}
+			} else if s.peek() == '+' || s.peek() == '*' || s.peek() == '-' {
+				if first {
+					sum += count_rec(s)
+					first = false
+				} else {
+					sum -= count_rec(s)
+				}
+			}
 		}
 		return sum
 	} else {
-		fmt.Printf("Error")
+		ans, _ := strconv.Atoi(string(s.peek()))
+		return ans
 	}
-	return 0
 }
 
 func count(expr string) int {
-	return count_rec(stream{[]rune(expr), 0})
+	str := stream{[]rune(expr), 0}
+	return count_rec(&str)
 }
 
 func test() bool {
-	exprs := []string{"", "+12", "*34", "*999", "*5+34", "*91+78", "-10", "-56", "*90"}
-	wants := []int{0, 3, 12, 729, 35, 135, -1, -11, 0}
+	exprs := []string{"", "+12", "*34", "*999", "*5+34", "*91+78", "-1", "-56", "*90", "-5*62", "+*34*23"}
+	wants := []int{0, 3, 12, 729, 35, 135, -1, -1, 0, -7, 0}
 	errors := 0
 	for i, expr := range exprs {
 		ans := count(expr)
@@ -90,8 +127,8 @@ func test() bool {
 }
 
 func main() {
-	/* scanner := bufio.NewScanner(os.Stdin)
+	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
-	s := scanner.Text() */
-	fmt.Println(test())
+	s := scanner.Text()
+	fmt.Println(count(s))
 }

@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Наверное я просто очень люблю Scheme
 type stream struct {
@@ -78,5 +80,7 @@ func test() bool {
 }
 
 func main() {
-	fmt.Println(test())
+	var s string
+	fmt.Scan(&s)
+	fmt.Println(econom(s))
 }

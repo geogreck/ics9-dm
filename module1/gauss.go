@@ -145,6 +145,9 @@ func main() {
 
 	m := inputMatrix(n)
 	solution := m.Solve()
+	if len(solution) == 0 {
+		fmt.Println("No solution")
+	}
 	for _, x := range solution {
 		fmt.Printf("%d/%d\n", x.a, x.b)
 	}
